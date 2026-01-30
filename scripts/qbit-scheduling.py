@@ -4,6 +4,11 @@ qBittorrent Container Scheduler
 Manages qBittorrent Docker container on/off schedule with download detection.
 """
 
+import os
+
+# Install docker and qbittorrent-api via pip if not already installed:
+os.system("pip install docker qbittorrent-api")
+
 import docker
 import qbittorrentapi
 import time
@@ -45,8 +50,7 @@ CONTAINER_START_WAIT = 120  # 2 minutes
 # ============================================================================
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -54,6 +58,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def get_container(docker_client, container_name):
     """Get Docker container by name."""
@@ -71,7 +76,7 @@ def is_container_running(container):
     """Check if container is running."""
     try:
         container.reload()
-        return container.status == 'running'
+        return container.status == "running"
     except Exception as e:
         logger.error(f"Error checking container status: {e}")
         return False
@@ -126,7 +131,7 @@ def get_qbittorrent_client():
         client = qbittorrentapi.Client(
             host=f"{QBITTORRENT_HOST}:{QBITTORRENT_PORT}",
             username=QBITTORRENT_USERNAME,
-            password=QBITTORRENT_PASSWORD
+            password=QBITTORRENT_PASSWORD,
         )
         client.auth_log_in()
         return client
@@ -145,10 +150,7 @@ def is_downloading(qbt_client):
     """
     try:
         torrents = qbt_client.torrents_info()
-        downloading_torrents = [
-            t for t in torrents
-            if t.state_enum.is_downloading
-        ]
+        downloading_torrents = [t for t in torrents if t.state_enum.is_downloading]
 
         count = len(downloading_torrents)
         names = [t.name for t in downloading_torrents]
@@ -207,12 +209,16 @@ def wait_for_downloads_to_finish(qbt_client):
             return True
 
         elapsed = time.time() - start_wait_time
-        logger.info(f"Waiting for {count} download(s) to finish... ({elapsed / 60:.1f} min elapsed)")
+        logger.info(
+            f"Waiting for {count} download(s) to finish... ({elapsed / 60:.1f} min elapsed)"
+        )
         for name in names:
             logger.info(f"  - {name}")
 
         if MAX_WAIT_TIME and elapsed >= MAX_WAIT_TIME:
-            logger.warning(f"Max wait time ({MAX_WAIT_TIME / 60:.1f} min) reached - forcing shutdown")
+            logger.warning(
+                f"Max wait time ({MAX_WAIT_TIME / 60:.1f} min) reached - forcing shutdown"
+            )
             return False
 
         time.sleep(CHECK_INTERVAL)
@@ -222,12 +228,15 @@ def wait_for_downloads_to_finish(qbt_client):
 # Main Scheduler Logic
 # ============================================================================
 
+
 def run_scheduler():
     """Main scheduler loop - runs once per execution."""
     logger.info("=" * 70)
     logger.info("qBittorrent Scheduler Starting")
     logger.info(f"Container: {CONTAINER_NAME}")
-    logger.info(f"Schedule: ON at {TURN_ON_TIME.strftime('%H:%M')}, OFF at {TURN_OFF_TIME.strftime('%H:%M')}")
+    logger.info(
+        f"Schedule: ON at {TURN_ON_TIME.strftime('%H:%M')}, OFF at {TURN_OFF_TIME.strftime('%H:%M')}"
+    )
     logger.info("=" * 70)
 
     # Get Docker client and container
@@ -283,7 +292,9 @@ def run_scheduler():
             finished = wait_for_downloads_to_finish(qbt_client)
 
             if not finished:
-                logger.warning("Downloads did not finish in time - proceeding with shutdown")
+                logger.warning(
+                    "Downloads did not finish in time - proceeding with shutdown"
+                )
 
         # Stop the container
         if stop_container(container):
