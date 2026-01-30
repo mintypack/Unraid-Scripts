@@ -4,10 +4,25 @@ qBittorrent Container Scheduler
 Manages qBittorrent Docker container on/off schedule with download detection.
 """
 
-import os
+import subprocess
+import sys
 
-# Install docker and qbittorrent-api via pip if not already installed:
-os.system("pip install docker qbittorrent-api")
+def ensure_dependencies():
+    """Install required packages if not already installed."""
+    required = {
+        "docker": "docker",
+        "qbittorrentapi": "qbittorrent-api",
+    }
+    for import_name, pip_name in required.items():
+        try:
+            __import__(import_name)
+        except ImportError:
+            print(f"Installing {pip_name}...")
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "--quiet", pip_name]
+            )
+
+ensure_dependencies()
 
 import docker
 import qbittorrentapi
